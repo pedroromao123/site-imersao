@@ -11,6 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/MotionPathPlugin.min.js"></script>
 <style>
   :root {
     --navy: #12285A;
@@ -308,6 +309,175 @@
     .sparkle { display: none; }
   }
 </style>
+<style>
+  /* =================================================================
+     REPAGINADA 2026-10 — camada de movimento e acabamento.
+     Tudo aqui soma ao estilo original; nada de texto foi alterado.
+     ================================================================= */
+  :root { --ease-out: cubic-bezier(.16,1,.3,1); --ease-in: cubic-bezier(.4,0,1,1); }
+  html { -webkit-tap-highlight-color: transparent; }
+  ::selection { background: var(--gold); color: var(--navy-deep); }
+  a, button, label, input { touch-action: manipulation; }
+
+  /* ---------- cabeçalho: encolhe, some ao descer, volta ao subir ---------- */
+  .top { transition: transform .45s var(--ease-out), padding .35s var(--ease-out), background .35s ease, box-shadow .35s ease; }
+  .top.scrolled { padding-top: calc(9px + env(safe-area-inset-top, 0px)); padding-bottom: 9px; box-shadow: 0 10px 30px -18px rgba(0,0,0,.6); }
+  .top.hide { transform: translateY(-110%); }
+  .top .brand img { transition: transform .6s var(--ease-out); }
+  .top .brand:hover img { transform: rotate(-8deg) scale(1.06); }
+  .progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, var(--gold), var(--gold-soft)); transform-origin: 0 50%; transform: scaleX(0); }
+  .navlink { position: relative; }
+  .navlink::after { content: ''; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: var(--gold); transform: scaleX(0); transform-origin: 100% 50%; transition: transform .45s var(--ease-out); }
+  .navlink:hover::after, .navlink.is-active::after { transform: scaleX(1); transform-origin: 0 50%; }
+  .navlink.is-active { color: #fff; }
+
+  /* botão principal: brilho que atravessa */
+  .btn { position: relative; overflow: hidden; isolation: isolate; will-change: transform; }
+  .btn::after { content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%; z-index: -1; background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent); transform: skewX(-20deg); transition: none; }
+  @media (hover: hover) { .btn:hover::after { left: 130%; transition: left .8s var(--ease-out); } }
+  .btn:active { transform: scale(.97); }
+  .btn .arrow { display: inline-block; margin-left: 10px; transition: transform .35s var(--ease-out); }
+  @media (hover: hover) { .btn:hover .arrow { transform: translateX(4px); } }
+
+  /* menu do celular */
+  .menu-btn { display: none; position: relative; width: 46px; height: 46px; margin-left: 10px; border-radius: 50%; border: 1px solid rgba(255,255,255,.3); background: transparent; color: #fff; cursor: pointer; flex-shrink: 0; }
+  .menu-btn i { position: absolute; left: 14px; right: 14px; height: 2px; background: currentColor; border-radius: 2px; transition: transform .4s var(--ease-out), opacity .2s ease; }
+  .menu-btn i:nth-child(1) { top: 17px; } .menu-btn i:nth-child(2) { top: 22px; } .menu-btn i:nth-child(3) { top: 27px; }
+  .menu-open .menu-btn i:nth-child(1) { transform: translateY(5px) rotate(45deg); }
+  .menu-open .menu-btn i:nth-child(2) { opacity: 0; }
+  .menu-open .menu-btn i:nth-child(3) { transform: translateY(-5px) rotate(-45deg); }
+  @media (max-width: 860px) { .menu-btn { display: inline-block; } }
+  .mnav { position: fixed; inset: 0; z-index: 49; background: var(--navy-deep); display: flex; flex-direction: column; justify-content: center; padding: 90px clamp(24px, 6vw, 56px) calc(40px + env(safe-area-inset-bottom, 0px)); clip-path: circle(0% at calc(100% - 46px) 40px); visibility: hidden; transition: clip-path .7s var(--ease-out), visibility 0s linear .7s; overscroll-behavior: contain; }
+  .menu-open .mnav { clip-path: circle(150% at calc(100% - 46px) 40px); visibility: visible; transition: clip-path .8s var(--ease-out), visibility 0s; }
+  .mnav a { display: block; font-family: var(--serif); font-size: clamp(40px, 11vw, 64px); line-height: 1.15; color: #fff; text-decoration: none; padding: 6px 0; opacity: 0; transform: translateY(24px); transition: opacity .5s ease, transform .6s var(--ease-out); }
+  .mnav a em { font-style: italic; color: var(--gold-soft); }
+  .menu-open .mnav a { opacity: 1; transform: none; }
+  .menu-open .mnav a:nth-child(2) { transition-delay: .06s; } .menu-open .mnav a:nth-child(3) { transition-delay: .12s; }
+  .menu-open .mnav a:nth-child(4) { transition-delay: .18s; } .menu-open .mnav a:nth-child(5) { transition-delay: .24s; }
+  .mnav .mnav-foot { margin-top: 36px; color: var(--muted-dark); font-size: 15px; opacity: 0; transition: opacity .5s ease .3s; }
+  .menu-open .mnav .mnav-foot { opacity: 1; }
+  body.lock { overflow: hidden; }
+
+  /* ---------- topo: céu estrelado + pó dourado que segue o mouse ---------- */
+  .hero { isolation: isolate; }
+  .sky { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+  .hero > .in { z-index: 1; }
+  .hero::before { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(600px circle at var(--mx, 70%) var(--my, 20%), rgba(209,164,65,.14), transparent 60%); transition: background-position .2s; }
+  .hero h1 em { font-style: italic; color: var(--gold-soft); }
+  .eyebrow { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 22px; padding: 7px 14px 7px 10px; border: 1px solid rgba(231,199,122,.35); border-radius: 999px; font-size: 14px; color: var(--gold-soft); background: rgba(209,164,65,.08); }
+  .eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 0 rgba(209,164,65,.6); animation: pulse 2.2s ease-out infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(209,164,65,.55); } 100% { box-shadow: 0 0 0 12px rgba(209,164,65,0); } }
+  .hero-photo { border-radius: 20px; box-shadow: 0 40px 80px -40px rgba(0,0,0,.7); }
+  @media (max-width: 640px) { .hero-photo { border-radius: 14px; } }
+  .scroll-cue { position: absolute; left: 50%; bottom: 18px; width: 26px; height: 42px; margin-left: -13px; border: 1.5px solid rgba(255,255,255,.55); border-radius: 14px; z-index: 3; pointer-events: none; }
+  .scroll-cue::after { content: ''; position: absolute; left: 50%; top: 8px; width: 4px; height: 8px; margin-left: -2px; border-radius: 2px; background: #fff; animation: cue 1.8s var(--ease-out) infinite; }
+  @keyframes cue { 0% { transform: translateY(0); opacity: 1; } 70% { transform: translateY(14px); opacity: 0; } 100% { opacity: 0; } }
+
+  /* ---------- faixa da rota: Brasil → Orlando + contagem regressiva ---------- */
+  .rota { position: relative; overflow: hidden; background: var(--navy-deep); color: #fff; padding: clamp(56px, 7vw, 96px) 0; }
+  .rota-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); gap: clamp(28px, 5vw, 72px); align-items: center; }
+  .route { width: 100%; height: auto; overflow: visible; }
+  .route .trail { fill: none; stroke: rgba(175,193,224,.28); stroke-width: 2; stroke-dasharray: 2 10; stroke-linecap: round; }
+  .route .trail-gold { fill: none; stroke: var(--gold); stroke-width: 2.5; stroke-linecap: round; }
+  .route .pin { fill: var(--gold); }
+  .route .pin-ring { fill: none; stroke: var(--gold); stroke-width: 1.5; transform-box: fill-box; transform-origin: center; animation: ring 2.4s ease-out infinite; }
+  .route .pin-ring.b { animation-delay: 1.2s; }
+  @keyframes ring { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(2.6); opacity: 0; } }
+  .route text { font-family: var(--serif); fill: #fff; font-size: 30px; }
+  .route text.sub { font-family: var(--sans); fill: var(--muted-dark); font-size: 15px; letter-spacing: .08em; text-transform: uppercase; }
+  .route .plane { fill: var(--gold-soft); }
+  .cd-title { font-size: 15px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted-dark); margin-bottom: 14px; }
+  .countdown { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  .cd-unit { position: relative; border: 1px solid rgba(255,255,255,.18); border-radius: 14px; padding: 16px 6px 12px; text-align: center; background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.01)); overflow: hidden; }
+  .cd-num { display: block; font-family: var(--serif); font-size: clamp(36px, 4.2vw, 60px); line-height: 1; color: var(--gold-soft); font-variant-numeric: tabular-nums; }
+  .cd-num.tick { animation: tick .5s var(--ease-out); }
+  @keyframes tick { 0% { transform: translateY(-30%); opacity: 0; } 100% { transform: none; opacity: 1; } }
+  .cd-lbl { display: block; margin-top: 6px; font-size: 13px; color: var(--muted-dark); }
+  .cd-note { margin-top: 14px; color: var(--muted-dark); }
+  @media (max-width: 899px) { .rota-grid { grid-template-columns: 1fr; } }
+
+  /* ---------- letreiro com os temas ---------- */
+  .marquee { background: var(--gold); color: var(--navy-deep); overflow: hidden; padding: 18px 0; position: relative; }
+  .marquee.alt { background: var(--navy-deep); color: var(--gold-soft); border-top: 1px solid rgba(255,255,255,.08); }
+  .mq-track { display: flex; width: max-content; animation: mq 48s linear infinite; }
+  .marquee.alt .mq-track { animation-direction: reverse; animation-duration: 56s; }
+  .marquee:hover .mq-track { animation-play-state: paused; }
+  .mq-track span { display: inline-flex; align-items: center; gap: 28px; padding-right: 28px; font-family: var(--serif); font-size: clamp(24px, 3vw, 40px); line-height: 1.1; white-space: nowrap; }
+  .mq-track svg { width: 22px; height: 22px; flex-shrink: 0; }
+  @keyframes mq { to { transform: translateX(-50%); } }
+  .mq-sec { overflow: hidden; background: var(--navy); padding: 34px 0 30px; }
+  .marquee-wrap { transform: rotate(-1.4deg); margin: 0 -40px; }
+  .marquee-wrap .marquee { margin: 0; }
+
+  /* ---------- títulos sobem palavra por palavra ---------- */
+  .w { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: .1em; margin-bottom: -.1em; }
+  .w > i { display: inline-block; font-style: inherit; will-change: transform; }
+
+  /* ---------- fotos com moldura e zoom suave ---------- */
+  .dia-fig, .quem-fig, .apple-fig { border-radius: 18px; }
+  .dia-fig figcaption, .apple-fig figcaption { border-top-right-radius: 12px; }
+  @media (hover: hover) {
+    .apple-fig img, .quem-fig img { transition: transform 1.2s var(--ease-out); }
+    .apple-fig:hover img, .quem-fig:hover img { transform: scale(1.05); }
+  }
+  .quem-fig { box-shadow: 0 30px 60px -30px rgba(11,27,64,.5); }
+  .quem-fig::after { content: ''; position: absolute; inset: 12px; border: 1px solid rgba(255,255,255,.55); border-radius: 12px; pointer-events: none; }
+  .quem .big span[data-count] { color: var(--gold-ink); font-variant-numeric: tabular-nums; }
+
+  /* lista do incluso: linha dourada que cresce ao passar o mouse */
+  .incl li { position: relative; transition: padding-left .4s var(--ease-out); }
+  .incl li::before { content: ''; position: absolute; left: 0; top: -1px; height: 1px; width: 100%; background: var(--gold); transform: scaleX(0); transform-origin: 0 50%; transition: transform .6s var(--ease-out); }
+  @media (hover: hover) { .incl li:hover { padding-left: 8px; } .incl li:hover::before { transform: scaleX(1); } }
+
+  /* ---------- investimento: seletor com pílula que desliza + borda dourada girando ---------- */
+  .seg { position: relative; }
+  .seg-pill { position: absolute; left: 0; top: 0; border-radius: 999px; background: var(--gold); z-index: 0; transition: transform .55s var(--ease-out), width .55s var(--ease-out), height .55s var(--ease-out); pointer-events: none; }
+  .seg.has-pill button { position: relative; z-index: 1; }
+  .seg.has-pill button[aria-pressed="true"] { background: transparent; border-color: transparent; }
+  @property --ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+  .calc { position: relative; border-radius: 22px; border-color: transparent; background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015)); }
+  .calc::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; background: conic-gradient(from var(--ang), rgba(255,255,255,.18) 0deg, var(--gold) 60deg, rgba(255,255,255,.18) 140deg, rgba(255,255,255,.18) 360deg); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: spin 7s linear infinite; pointer-events: none; }
+  .calc::after { content: ''; position: absolute; inset: -30% -10% auto auto; width: 60%; height: 60%; background: radial-gradient(closest-side, rgba(209,164,65,.18), transparent); pointer-events: none; }
+  @keyframes spin { to { --ang: 360deg; } }
+  .calc-total { transition: color .3s ease; }
+  .calc-total.flash { animation: flash .7s var(--ease-out); }
+  @keyframes flash { 0% { text-shadow: 0 0 0 rgba(231,199,122,0); } 30% { text-shadow: 0 0 28px rgba(231,199,122,.55); } 100% { text-shadow: 0 0 0 rgba(231,199,122,0); } }
+
+  /* ---------- dúvidas ---------- */
+  .faq-q { transition: color .3s ease, padding-left .4s var(--ease-out); }
+  @media (hover: hover) { .faq-q:hover { padding-left: 8px; } }
+  .faq-item.open .faq-q { color: var(--navy-deep); }
+  .faq-a p { transform: translateY(-6px); opacity: 0; transition: transform .5s var(--ease-out), opacity .4s ease; }
+  .faq-item.open .faq-a p { transform: none; opacity: 1; transition-delay: .08s; }
+
+  /* ---------- candidatura ---------- */
+  .field input[type="text"], .field input[type="email"], .field input[type="tel"] { font-size: max(16px, 17px); border-radius: 12px; }
+  .field { position: relative; }
+  .field input:focus { box-shadow: 0 0 0 4px rgba(209,164,65,.18); }
+  .burst { position: fixed; z-index: 80; width: 14px; height: 14px; pointer-events: none; color: var(--gold); }
+  .burst svg { width: 100%; height: 100%; display: block; }
+  .cand-cd { display: inline-flex; align-items: center; gap: 10px; margin-top: 18px; padding: 8px 14px; border-radius: 999px; background: rgba(209,164,65,.1); border: 1px solid rgba(231,199,122,.3); color: var(--gold-soft); font-size: 15px; }
+  .cand-cd b { font-weight: 600; color: #fff; font-variant-numeric: tabular-nums; }
+
+  /* ---------- rodapé: assinatura grande ---------- */
+  .foot-mark { font-family: var(--serif); font-size: clamp(36px, 10.4vw, 196px); line-height: .9; letter-spacing: -.03em; white-space: nowrap; padding: clamp(40px, 6vw, 80px) 0 0; background: linear-gradient(100deg, var(--gold) 0%, var(--gold-soft) 35%, #fff6dc 50%, var(--gold-soft) 65%, var(--gold) 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: sheen 8s ease-in-out infinite; overflow: hidden; }
+  @keyframes sheen { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0% 0; } }
+  .foot-mark-wrap { overflow: hidden; }
+
+  /* ---------- botão voltar ao topo ---------- */
+  .to-top { position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 40; width: 52px; height: 52px; border-radius: 50%; border: 0; background: var(--gold); color: var(--navy-deep); cursor: pointer; box-shadow: 0 14px 30px -10px rgba(0,0,0,.6); opacity: 0; transform: translateY(16px) scale(.9); pointer-events: none; transition: opacity .35s ease, transform .5s var(--ease-out); }
+  .to-top.show { opacity: 1; transform: none; pointer-events: auto; }
+  .to-top svg { width: 22px; height: 22px; }
+  .to-top circle.pr { fill: none; stroke: var(--navy-deep); stroke-width: 2.5; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; }
+  .to-top .ring { position: absolute; inset: 0; width: 52px; height: 52px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sky, .scroll-cue { display: none; }
+    .mq-track { animation: none; }
+    .mnav, .menu-open .mnav { transition: none; }
+    .foot-mark { animation: none; }
+  }
+</style>
 </head>
 <body>
 
@@ -327,13 +497,26 @@
     <a class="navlink" href="#duvidas">Dúvidas</a>
     <a class="btn btn-sm" href="#candidatura">Candidatar-se</a>
   </nav>
+  <button class="menu-btn" type="button" aria-expanded="false" aria-controls="mnav" aria-label="Abrir menu"><i></i><i></i><i></i></button>
+  <span class="progress" aria-hidden="true"></span>
 </header>
+
+<nav class="mnav" id="mnav" aria-label="Menu" aria-hidden="true">
+  <a href="#dia">O <em>programa</em></a>
+  <a href="#quem">Quem <em>conduz</em></a>
+  <a href="#investimento"><em>Investimento</em></a>
+  <a href="#duvidas"><em>Dúvidas</em></a>
+  <a href="#candidatura">Candidatar-se</a>
+  <p class="mnav-foot">Orlando, 16 a 21 de maio de 2027</p>
+</nav>
 
 <main>
 
 <!-- ============ TOPO ============ -->
 <section class="hero bg-navy">
+  <canvas class="sky" aria-hidden="true"></canvas>
   <div class="in" style="position:relative">
+    <p class="eyebrow"><span class="dot" aria-hidden="true"></span>14ª turma · candidaturas abertas</p>
     <h1>
       <span class="ln"><span>Seis dias em Orlando</span></span>
       <span class="ln"><span>para aprender a</span></span>
@@ -342,7 +525,7 @@
     <div class="hero-copy">
       <p class="lead">Imersão corporativa para empresários e gestores, conduzida por Romão Viana e convidados. Metade do dia no auditório, metade nos parques, vendo na prática o que foi estudado.</p>
       <div class="hero-actions">
-        <a class="btn" href="#candidatura">Candidatar-se à 14ª turma</a>
+        <a class="btn" href="#candidatura">Candidatar-se à 14ª turma<span class="arrow" aria-hidden="true">→</span></a>
         <a class="link" href="#dia">Ver como são os dias</a>
       </div>
     </div>
@@ -385,6 +568,36 @@
     </a>
   </div>
 </section>
+
+<!-- ============ ROTA + CONTAGEM ============ -->
+<section class="rota" aria-label="Rota e contagem regressiva">
+  <div class="in rota-grid">
+    <svg class="route" viewBox="0 0 760 270" role="img" aria-label="Rota do Brasil até Orlando, na Flórida">
+      <path class="trail" d="M60 210C220 40 520 20 700 120"/>
+      <path class="trail-gold" d="M60 210C220 40 520 20 700 120"/>
+      <g class="city-a"><circle class="pin-ring" cx="60" cy="210" r="9"/><circle class="pin" cx="60" cy="210" r="6"/><text x="36" y="254">Brasil</text></g>
+      <g class="city-b"><circle class="pin-ring" cx="700" cy="120" r="9"/><circle class="pin-ring b" cx="700" cy="120" r="9"/><circle class="pin" cx="700" cy="120" r="6"/><text x="700" y="168" text-anchor="middle">Orlando</text><text class="sub" x="700" y="192" text-anchor="middle">Flórida</text></g>
+      <g class="plane-g"><path class="plane" d="M18 0C18-1.6 16.5-2.2 14-2.2L4-2.2-4-12H-8L-3-2.2H-11L-14-6H-17L-15 0-17 6H-14L-11 2.2H-3L-8 12H-4L4 2.2H14C16.5 2.2 18 1.6 18 0Z"/></g>
+    </svg>
+    <div>
+      <p class="cd-title">Faltam para a imersão</p>
+      <div class="countdown" role="timer" aria-label="Contagem regressiva até 16 de maio de 2027">
+        <div class="cd-unit"><span class="cd-num" data-cd="d">000</span><span class="cd-lbl">dias</span></div>
+        <div class="cd-unit"><span class="cd-num" data-cd="h">00</span><span class="cd-lbl">horas</span></div>
+        <div class="cd-unit"><span class="cd-num" data-cd="m">00</span><span class="cd-lbl">min</span></div>
+        <div class="cd-unit"><span class="cd-num" data-cd="s">00</span><span class="cd-lbl">seg</span></div>
+      </div>
+      <p class="cd-note small">De 16 a 21 de maio de 2027, em Orlando, Flórida.</p>
+    </div>
+  </div>
+</section>
+
+<div class="mq-sec" aria-hidden="true">
+  <div class="marquee-wrap">
+    <div class="marquee"><div class="mq-track"><span>Marketing e experiência do cliente<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Liderança e gestão de pessoas<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Empowerment e chaves de excelência Disney<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Captura de valor e análise de mercado<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Fluxo Disney de excelência e lucratividade<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Engajamento e cultura organizacional<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Marketing e experiência do cliente<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Liderança e gestão de pessoas<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Empowerment e chaves de excelência Disney<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Captura de valor e análise de mercado<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Fluxo Disney de excelência e lucratividade<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Engajamento e cultura organizacional<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span></div></div>
+    <div class="marquee alt"><div class="mq-track"><span>Teoria no auditório<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Prática nos parques<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Orlando, Flórida<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>16 a 21 de maio de 2027<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>14ª turma<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Teoria no auditório<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Prática nos parques<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Orlando, Flórida<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>16 a 21 de maio de 2027<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>14ª turma<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Teoria no auditório<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Prática nos parques<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Orlando, Flórida<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>16 a 21 de maio de 2027<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>14ª turma<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Teoria no auditório<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Prática nos parques<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>Orlando, Flórida<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>16 a 21 de maio de 2027<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span><span>14ª turma<svg viewBox="0 0 24 24"><use href="#spark"/></svg></span></div></div>
+  </div>
+</div>
 
 <!-- ============ O DIA ============ -->
 <section class="dia" id="dia" aria-label="Como são os dias">
@@ -495,7 +708,7 @@
           <button type="button" data-pay="parcelado" aria-pressed="false">Parcelado no cartão, 9x</button>
         </div>
       </fieldset>
-      <p style="margin-top:34px"><a class="btn" href="#candidatura">Candidatar-se à 14ª turma</a></p>
+      <p style="margin-top:34px"><a class="btn" href="#candidatura">Candidatar-se à 14ª turma<span class="arrow" aria-hidden="true">→</span></a></p>
     </div>
 
     <div class="calc">
@@ -556,6 +769,7 @@
     <div id="form-wrap">
       <h2><span style="white-space:nowrap">Candidate-se</span> à 14ª&nbsp;turma.</h2>
       <p class="lead">Preencha seus dados. Depois, entramos em contato pelo WhatsApp para conversar e, se fizer sentido, enviar o Termo de Inscrição.</p>
+      <p class="cand-cd"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="#spark" fill="currentColor"/></svg>Faltam <b data-cd-days>—</b> dias para a abertura da imersão</p>
 
       <form class="form" id="form-candidatura" novalidate>
         <div class="fgrid">
@@ -617,6 +831,7 @@
 </main>
 
 <footer class="bg-deep">
+  <div class="in foot-mark-wrap" aria-hidden="true"><p class="foot-mark">Imersão D’Excelência</p></div>
   <div class="in foot">
     <a class="brand" href="#top"><img src="img/logo.png" alt="" width="40" height="41"><span>Imersão D’Excelência</span></a>
     <p>Treinamento corporativo de alto impacto, em Orlando.<br>AGAP, Academia e Gestão Alta Performance, CNPJ 34.094.596/0001-58.<br>WhatsApp: <a href="https://wa.me/5566999845323" target="_blank" rel="noopener noreferrer">(66) 9 9984-5323</a></p>
@@ -850,6 +1065,262 @@
   /* reajusta posições depois que fontes e imagens carregam */
   window.addEventListener('load', function () { ScrollTrigger.refresh(); });
   if (document.fonts && document.fonts.ready) { document.fonts.ready.then(function () { ScrollTrigger.refresh(); }); }
+})();
+</script>
+<button class="to-top" type="button" aria-label="Voltar ao topo"><svg class="ring" viewBox="0 0 52 52" aria-hidden="true"><circle class="pr" cx="26" cy="26" r="23"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+<script>
+/* =================================================================
+   REPAGINADA 2026-10 — motion graphics e microinterações.
+   Roda depois do script original e só acrescenta efeitos.
+   ================================================================= */
+(function () {
+  'use strict';
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  var G = typeof window.gsap !== 'undefined' ? window.gsap : null;
+  var ST = typeof window.ScrollTrigger !== 'undefined' ? window.ScrollTrigger : null;
+  var motion = !!(G && ST && !reduce);
+  if (G && window.MotionPathPlugin) G.registerPlugin(window.MotionPathPlugin);
+  if (G && ST) G.registerPlugin(ST);
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+  var SPARK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 0c.7 6.3 5.7 11.3 12 12-6.3.7-11.3 5.7-12 12-.7-6.3-5.7-11.3-12-12C6.3 11.3 11.3 6.3 12 0z"/></svg>';
+
+  /* ---------- 1. cabeçalho: progresso, encolher, esconder ao descer ---------- */
+  var top = $('#top'), bar = $('.progress'), toTop = $('.to-top'), ring = toTop && toTop.querySelector('circle.pr');
+  var lastY = window.scrollY, ticking = false, RING_LEN = 2 * Math.PI * 23;
+  if (ring) { ring.style.strokeDasharray = RING_LEN; ring.style.strokeDashoffset = RING_LEN; }
+  function onScroll() {
+    var y = window.scrollY, max = document.documentElement.scrollHeight - window.innerHeight;
+    var p = max > 0 ? Math.min(1, y / max) : 0;
+    if (bar) bar.style.transform = 'scaleX(' + p + ')';
+    if (ring) ring.style.strokeDashoffset = RING_LEN * (1 - p);
+    top.classList.toggle('scrolled', y > 40);
+    var menuOpen = document.body.classList.contains('menu-open');
+    if (!menuOpen) top.classList.toggle('hide', y > 260 && y > lastY + 2);
+    if (y < lastY - 2) top.classList.remove('hide');
+    if (toTop) toTop.classList.toggle('show', y > window.innerHeight * 1.2);
+    lastY = y; ticking = false;
+  }
+  window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
+  onScroll();
+  if (toTop) toTop.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' }); });
+
+  // link do menu acende conforme a seção na tela
+  var links = $$('.navlink');
+  if ('IntersectionObserver' in window) {
+    var secIO = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        links.forEach(function (a) { a.classList.toggle('is-active', a.getAttribute('href') === '#' + e.target.id); });
+      });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    ['dia', 'quem', 'investimento', 'duvidas'].forEach(function (id) { var s = document.getElementById(id); if (s) secIO.observe(s); });
+  }
+
+  /* ---------- 2. menu do celular ---------- */
+  var mBtn = $('.menu-btn'), mNav = $('#mnav');
+  function setMenu(open) {
+    document.body.classList.toggle('menu-open', open);
+    document.body.classList.toggle('lock', open);
+    mBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    mBtn.setAttribute('aria-label', open ? 'Fechar menu' : 'Abrir menu');
+    mNav.setAttribute('aria-hidden', open ? 'false' : 'true');
+    if (open) { top.classList.remove('hide'); var f = mNav.querySelector('a'); if (f) setTimeout(function () { f.focus({ preventScroll: true }); }, 250); }
+  }
+  if (mBtn && mNav) {
+    mBtn.addEventListener('click', function () { setMenu(!document.body.classList.contains('menu-open')); });
+    $$('a', mNav).forEach(function (a) { a.addEventListener('click', function () { setMenu(false); }); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && document.body.classList.contains('menu-open')) { setMenu(false); mBtn.focus(); } });
+    window.matchMedia('(min-width: 861px)').addEventListener('change', function (m) { if (m.matches) setMenu(false); });
+  }
+
+  /* ---------- 3. céu estrelado + estrela cadente + pó dourado ---------- */
+  var hero = $('.hero'), cv = $('.sky');
+  if (hero && cv && !reduce && cv.getContext) {
+    var ctx = cv.getContext('2d'), W = 0, H = 0, dpr = Math.min(2, window.devicePixelRatio || 1);
+    var stars = [], dust = [], shoot = null, running = false, visible = true, t0 = performance.now(), nextShoot = 2500;
+    function size() {
+      var r = hero.getBoundingClientRect(); W = r.width; H = r.height;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      var n = Math.round(Math.min(160, W * H / 9000));
+      stars = []; for (var i = 0; i < n; i++) stars.push({ x: Math.random() * W, y: Math.random() * H * 0.75, r: Math.random() * 1.2 + .25, p: Math.random() * Math.PI * 2, s: .6 + Math.random() * 1.6, g: Math.random() < .14 });
+    }
+    function frame(now) {
+      if (!running) return;
+      var t = (now - t0) / 1000; ctx.clearRect(0, 0, W, H);
+      for (var i = 0; i < stars.length; i++) {
+        var s = stars[i], a = .25 + .75 * (0.5 + 0.5 * Math.sin(t * s.s + s.p));
+        ctx.globalAlpha = a * (s.g ? .9 : .55); ctx.fillStyle = s.g ? '#E7C77A' : '#FFFFFF';
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.283); ctx.fill();
+      }
+      if (!shoot && now - t0 > nextShoot) { shoot = { x: W * (.2 + Math.random() * .6), y: H * (.05 + Math.random() * .2), vx: 7 + Math.random() * 4, vy: 2.4 + Math.random() * 1.6, life: 1 }; nextShoot = now - t0 + 5000 + Math.random() * 6000; }
+      if (shoot) {
+        var gx = shoot.x - shoot.vx * 14, gy = shoot.y - shoot.vy * 14, grd = ctx.createLinearGradient(gx, gy, shoot.x, shoot.y);
+        grd.addColorStop(0, 'rgba(231,199,122,0)'); grd.addColorStop(1, 'rgba(255,246,220,' + shoot.life + ')');
+        ctx.globalAlpha = 1; ctx.strokeStyle = grd; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(shoot.x, shoot.y); ctx.stroke();
+        shoot.x += shoot.vx; shoot.y += shoot.vy; shoot.life -= .012; if (shoot.life <= 0 || shoot.x > W + 50) shoot = null;
+      }
+      for (var j = dust.length - 1; j >= 0; j--) {
+        var d = dust[j]; d.x += d.vx; d.y += d.vy; d.vy += .03; d.life -= .018;
+        if (d.life <= 0) { dust.splice(j, 1); continue; }
+        ctx.globalAlpha = d.life; ctx.fillStyle = d.c; ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.rot += .05);
+        var z = d.r * (0.6 + d.life * .6); ctx.beginPath(); ctx.moveTo(0, -z); ctx.quadraticCurveTo(0, 0, z, 0); ctx.quadraticCurveTo(0, 0, 0, z); ctx.quadraticCurveTo(0, 0, -z, 0); ctx.quadraticCurveTo(0, 0, 0, -z); ctx.fill(); ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(frame);
+    }
+    function start() { if (running || !visible || document.hidden) return; running = true; requestAnimationFrame(frame); }
+    function stop() { running = false; }
+    size(); start();
+    window.addEventListener('resize', function () { size(); });
+    document.addEventListener('visibilitychange', function () { document.hidden ? stop() : start(); });
+    if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { visible = es[0].isIntersecting; visible ? start() : stop(); }).observe(hero);
+    if (fine) {
+      var lastSpawn = 0;
+      hero.addEventListener('pointermove', function (e) {
+        var r = hero.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+        hero.style.setProperty('--mx', x + 'px'); hero.style.setProperty('--my', y + 'px');
+        var now = performance.now(); if (now - lastSpawn < 28 || dust.length > 90) return; lastSpawn = now;
+        for (var k = 0; k < 2; k++) dust.push({ x: x, y: y, vx: (Math.random() - .5) * 1.4, vy: (Math.random() - .8) * 1.2, r: 2 + Math.random() * 3.5, life: 1, rot: Math.random() * 3, c: Math.random() < .7 ? '#E7C77A' : '#FFFFFF' });
+      });
+    }
+  }
+
+  /* ---------- 4. contagem regressiva até a abertura (Orlando, 16/05/2027) ---------- */
+  var TARGET = Date.parse('2027-05-16T00:00:00-04:00');
+  var cdEls = { d: $$('[data-cd="d"]'), h: $$('[data-cd="h"]'), m: $$('[data-cd="m"]'), s: $$('[data-cd="s"]') };
+  var cdDays = $$('[data-cd-days]');
+  var prev = {};
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function tickCd() {
+    var diff = Math.max(0, TARGET - Date.now()), s = Math.floor(diff / 1000);
+    var v = { d: Math.floor(s / 86400), h: Math.floor(s % 86400 / 3600), m: Math.floor(s % 3600 / 60), s: s % 60 };
+    Object.keys(v).forEach(function (k) {
+      var txt = k === 'd' ? String(v[k]) : pad(v[k]);
+      if (prev[k] === txt) return; prev[k] = txt;
+      cdEls[k].forEach(function (el) { el.textContent = txt; if (!reduce) { el.classList.remove('tick'); void el.offsetWidth; el.classList.add('tick'); } });
+    });
+    cdDays.forEach(function (el) { el.textContent = v.d; });
+  }
+  if (cdEls.d.length || cdDays.length) { tickCd(); setInterval(tickCd, 1000); }
+
+  /* ---------- 5. botões que gravitam até o mouse ---------- */
+  if (fine && motion) {
+    $$('.btn').forEach(function (b) {
+      var qx = G.quickTo(b, 'x', { duration: .5, ease: 'power3.out' }), qy = G.quickTo(b, 'y', { duration: .5, ease: 'power3.out' });
+      b.addEventListener('pointermove', function (e) { var r = b.getBoundingClientRect(); qx((e.clientX - r.left - r.width / 2) * .22); qy((e.clientY - r.top - r.height / 2) * .3); });
+      b.addEventListener('pointerleave', function () { qx(0); qy(0); });
+    });
+  }
+
+  /* ---------- 6. seletor do investimento com pílula deslizante ---------- */
+  $$('.seg').forEach(function (seg) {
+    var pill = document.createElement('span'); pill.className = 'seg-pill'; pill.setAttribute('aria-hidden', 'true');
+    seg.insertBefore(pill, seg.firstChild); seg.classList.add('has-pill');
+    function place(noAnim) {
+      var b = seg.querySelector('button[aria-pressed="true"]'); if (!b) return;
+      if (noAnim) pill.style.transition = 'none';
+      pill.style.width = b.offsetWidth + 'px'; pill.style.height = b.offsetHeight + 'px';
+      pill.style.transform = 'translate(' + b.offsetLeft + 'px,' + b.offsetTop + 'px)';
+      if (noAnim) { void pill.offsetWidth; pill.style.transition = ''; }
+    }
+    seg.addEventListener('click', function (e) {
+      if (!e.target.closest('button')) return;
+      requestAnimationFrame(function () { place(false); });
+      var t = $('#calc-total'); if (t && !reduce) { t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash'); }
+    });
+    place(true);
+    window.addEventListener('resize', function () { place(true); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { place(true); });
+  });
+
+  /* ---------- 7. explosão de estrelas ao enviar a candidatura ---------- */
+  var form = $('#form-candidatura');
+  if (form) form.addEventListener('submit', function () {
+    setTimeout(function () {
+      if (!$('#form-wrap').classList.contains('done') || reduce) return;
+      var badge = $('#form-badge'); var r = (badge || form).getBoundingClientRect();
+      var cx = r.left + r.width / 2, cy = r.top + Math.min(r.height / 2, 160);
+      for (var i = 0; i < 28; i++) {
+        var s = document.createElement('span'); s.className = 'burst'; s.innerHTML = SPARK;
+        var sz = 8 + Math.random() * 16; s.style.width = s.style.height = sz + 'px'; s.style.left = cx + 'px'; s.style.top = cy + 'px';
+        if (i % 4 === 0) s.style.color = '#fff';
+        document.body.appendChild(s);
+        var ang = Math.random() * Math.PI * 2, dist = 90 + Math.random() * 170;
+        var anim = s.animate([
+          { transform: 'translate(-50%,-50%) scale(.2) rotate(0deg)', opacity: 1 },
+          { transform: 'translate(calc(-50% + ' + Math.cos(ang) * dist + 'px), calc(-50% + ' + (Math.sin(ang) * dist + 40) + 'px)) scale(1) rotate(' + (Math.random() * 360) + 'deg)', opacity: 0 }
+        ], { duration: 1000 + Math.random() * 600, easing: 'cubic-bezier(.16,1,.3,1)' });
+        anim.onfinish = (function (el) { return function () { el.remove(); }; })(s);
+      }
+    }, 30);
+  });
+
+  if (!motion) return;
+
+  /* ---------- 8. rota Brasil → Orlando desenhada pela rolagem ---------- */
+  var trail = $('.route .trail-gold'), plane = $('.route .plane-g');
+  if (trail) {
+    var L = trail.getTotalLength();
+    trail.style.strokeDasharray = L; trail.style.strokeDashoffset = L;
+    var rtl = G.timeline({ scrollTrigger: { trigger: '.rota', start: 'top 80%', end: 'bottom 45%', scrub: .8 } });
+    rtl.to(trail, { strokeDashoffset: 0, ease: 'none', duration: 1 }, 0);
+    if (plane && window.MotionPathPlugin) {
+      G.set(plane, { motionPath: { path: trail, align: trail, alignOrigin: [.5, .5], autoRotate: true, start: 0, end: 0 } });
+      rtl.to(plane, { motionPath: { path: trail, align: trail, alignOrigin: [.5, .5], autoRotate: true }, ease: 'none', duration: 1 }, 0);
+    } else if (plane) { plane.style.display = 'none'; }
+    rtl.from('.route .city-b', { opacity: 0, y: 10, duration: .25 }, .78);
+    G.from('.cd-unit', { y: 30, opacity: 0, duration: .8, stagger: .08, ease: 'power3.out', scrollTrigger: { trigger: '.countdown', start: 'top 85%', once: true } });
+  }
+
+  /* ---------- 9. títulos sobem palavra por palavra ---------- */
+  $$('#quem h2, #incluso h2, #investimento h2, #duvidas h2, #candidatura h2, .nao h3').forEach(function (h) {
+    var words = [];
+    Array.prototype.slice.call(h.childNodes).forEach(function (n) {
+      if (n.nodeType === 3) {
+        var frag = document.createDocumentFragment();
+        n.textContent.split(/(\s+)/).forEach(function (part) {
+          if (!part) return;
+          if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+          var w = document.createElement('span'); w.className = 'w'; var i = document.createElement('i'); i.textContent = part; w.appendChild(i); frag.appendChild(w); words.push(i);
+        });
+        h.replaceChild(frag, n);
+      } else if (n.nodeType === 1) {
+        var w2 = document.createElement('span'); w2.className = 'w'; var i2 = document.createElement('i');
+        h.replaceChild(w2, n); i2.appendChild(n); w2.appendChild(i2); words.push(i2);
+      }
+    });
+    h.setAttribute('aria-label', h.textContent.replace(/\s+/g, ' ').trim());
+    G.from(words, { yPercent: 110, duration: 1, stagger: .06, ease: 'power4.out', scrollTrigger: { trigger: h, start: 'top 88%', once: true } });
+  });
+
+  /* ---------- 10. demais entradas ---------- */
+  G.from('.eyebrow', { opacity: 0, y: -10, duration: .7, ease: 'power3.out', delay: .05 });
+  ST.batch('.incl li', { start: 'top 94%', once: true, onEnter: function (b) { G.from(b, { x: -18, opacity: 0, duration: .7, stagger: .07, ease: 'power3.out' }); } });
+  ST.batch('.roles li, .faq-item', { start: 'top 94%', once: true, onEnter: function (b) { G.from(b, { y: 20, opacity: 0, duration: .7, stagger: .08, ease: 'power3.out' }); } });
+  G.from('.calc', { y: 40, opacity: 0, duration: 1, ease: 'power3.out', scrollTrigger: { trigger: '.calc', start: 'top 85%', once: true } });
+  G.from('.marquee-wrap', { scaleX: .9, opacity: 0, duration: 1.1, ease: 'power3.out', scrollTrigger: { trigger: '.marquee-wrap', start: 'top 92%', once: true } });
+  // letreiro acelera conforme a velocidade da rolagem
+  var tracks = $$('.mq-track');
+  if (tracks.length) {
+    var anims = tracks.map(function (t) { return t.getAnimations ? t.getAnimations()[0] : null; }).filter(Boolean);
+    var boost = 0;
+    ST.create({ trigger: '.marquee-wrap', start: 'top bottom', end: 'bottom top', onUpdate: function (self) { boost = Math.min(4, Math.abs(self.getVelocity()) / 400); } });
+    G.ticker.add(function () { boost *= .92; anims.forEach(function (a) { a.playbackRate = 1 + boost; }); });
+  }
+  G.from('.foot-mark', { yPercent: 60, opacity: 0, duration: 1.4, ease: 'power4.out', scrollTrigger: { trigger: '.foot-mark-wrap', start: 'top 95%', once: true } });
+
+  // foto do Romão inclina levemente com o mouse
+  var qf = $('.quem-fig');
+  if (qf && fine) {
+    var rx = G.quickTo(qf, 'rotationY', { duration: .8, ease: 'power3.out' }), ry = G.quickTo(qf, 'rotationX', { duration: .8, ease: 'power3.out' });
+    G.set(qf, { transformPerspective: 900 });
+    qf.addEventListener('pointermove', function (e) { var r = qf.getBoundingClientRect(); rx(((e.clientX - r.left) / r.width - .5) * 8); ry(-((e.clientY - r.top) / r.height - .5) * 8); });
+    qf.addEventListener('pointerleave', function () { rx(0); ry(0); });
+  }
+
+  window.addEventListener('load', function () { ST.refresh(); });
 })();
 </script>
 </body>
